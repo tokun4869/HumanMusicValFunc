@@ -1,0 +1,34 @@
+version: '3'
+services:
+  backend:
+    container_name: "python"
+    build: ./backend
+    volumes:
+      - ./backend:/backend
+    working_dir: "/backend"
+    expose:
+      - 8000
+    depends_on:
+      - server
+  server:
+    container_name: "nginx"
+    build: ./server
+    volumes:
+      - ./server/conf.d:/etc/nginx/conf.d
+    working_dir: "/server"
+    ports:
+      - "80:80"
+  # frontend:
+  #  container_name: react
+  #  build: ./frontend
+  #  volumes:
+  #    - ./frontend:/frontend
+  #  working_dir: /frontend
+  #  ports:
+  #    - 3000:3000
+  #  tty: true
+  #  stdin_open: true
+  #  environment:
+  #    - CHOKIDAR_USEPOLLING=true
+  #  depends_on:
+  #    - server
