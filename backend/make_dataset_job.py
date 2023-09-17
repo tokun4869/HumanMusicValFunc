@@ -1,10 +1,13 @@
 import numpy as np
+
 from pydantic import BaseModel
 from feature import music2feature
 from transform import title2augmusic
+from io_module import get_new_file_path
+from static_value import *
 
 class MakeDatasetJob(BaseModel):
-  n_aug: int = 5
+  n_aug: int = 10
   sr: int = 48000
   status: bool = False
   now_file_name: str = None
@@ -26,6 +29,9 @@ class MakeDatasetJob(BaseModel):
 
   def get_progress(self) -> "tuple[str, float]":
     return self.now_file_name, self.now_progress
+  
+  def get_dataset_dir(self) -> "tuple[str, str]":
+    return self.train_dataset_dir, self.target_dataset_dir
 
   def dataset(self, file_name_list: "list[str]", answer_list: "list[int]") -> None:
     train = np.array([])
@@ -42,5 +48,7 @@ class MakeDatasetJob(BaseModel):
           target = np.array([answer])
         else:
           target = np.vstack([target, answer])
-    np.save("data/aug_music/train", train)
-    np.save("data/aug_music/target", target)
+    self.train_dataset_dir = get_new_file_path(DATASET_ROOT + TRAIN_DIR, train)
+    self.target_dataset_dir = get_new_file_path(DATASET_ROOT + TRAIN_DIR, train)
+    np.save(self.train_dataset_dir, train)
+    np.save(self.target_dataset_dir, target)

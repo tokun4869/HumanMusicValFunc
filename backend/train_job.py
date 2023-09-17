@@ -1,16 +1,17 @@
 import numpy as np
-from train import data_load, valid_index, new_file_path
+import random
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
+
 from pydantic import BaseModel
 from model import Model
+from io_module import get_new_file_path
+from static_value import *
 
 class TrainJob(BaseModel):
   status: bool = False
   now_epoch: int = 0
-  train_dataset_dir: str = None
-  target_dataset_dir: str = None
   train_model_dir: str = None
     
   def __call__(self) -> None:
@@ -30,9 +31,22 @@ class TrainJob(BaseModel):
   
   def get_model_dir(self) -> str:
     return self.train_model_dir
+  
+  def get_dataset(self, train_data_dir: str, target_data_dir: str) -> "tuple[np.ndarray[np.float32], np.ndarray[np.float32]]":
+    train = np.load(train_data_dir)
+    target = np.load(target_data_dir)
+    return train, target
 
-  def train(self) -> None:
-    train_array, target_array = data_load("data/aug_music")
+  def get_valid_index_list(self, array: "np.ndarray[np.float32]", n_index: int):
+    index_list = []
+    while len(index_list) < n_index:
+      index = random.randint(0, array.shape[0])
+      if index not in index_list:
+        index_list.append(index)
+    return index_list
+
+  def train(self, train_data_dir: str, target_data_dir: str) -> None:
+    train_array, target_array = self.get_dataset(train_data_dir, target_data_dir)
 
     model = Model()
     learning_rate = 0.002
@@ -47,7 +61,7 @@ class TrainJob(BaseModel):
       train_loss_list = np.array([])
       valid_loss_list = np.array([])
       optimizer.zero_grad()
-      index_list = valid_index(train_array, 10)
+      index_list = self.get_valid_index_list(train_array, 10)
       for index, (train, target) in enumerate(zip(train_array, target_array)):
         train = torch.from_numpy(train).float()
         target = torch.from_numpy(target).float()
@@ -70,7 +84,7 @@ class TrainJob(BaseModel):
     plt.plot(train_loss_history, label="train")
     plt.plot(valid_loss_history, label="valid", alpha=0.5)
     plt.legend()
-    plt.savefig(new_file_path("figure", "loss", ".png"))
+    plt.savefig(get_new_file_path("figure", "loss", ".png"))
 
-    self.train_model_dir = new_file_path("model", "train", ".pth")
+    self.train_model_dir = get_new_file_path("model", "train", ".pth")
     torch.save(model.state_dict(), self.train_model_dir)
