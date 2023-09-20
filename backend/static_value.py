@@ -1,4 +1,8 @@
 MUSIC_ROOT = "data/music/"
 DATASET_ROOT = "data/np/"
 TRAIN_DIR = "train/"
+TARGET_DIR = "target/"
 TEST_DIR = "test/"
+STATUS_BEFORE = "before"
+STATUS_INPROGRESS = "inprogress"
+STATUS_FINISH = "finish"

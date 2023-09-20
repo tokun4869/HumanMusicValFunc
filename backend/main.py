@@ -37,13 +37,15 @@ async def make_dataset(bg_tasks: BackgroundTasks, train_0: Annotated[int, Form()
 
 @app.get("/load/dataset")
 async def wait_dataset(bg_tasks: BackgroundTasks, request: Request):
-  if(make_dataset_task.get_status()):
-    now_file_name, now_progress = make_dataset_task.get_progress()
-    return templates.TemplateResponse("load.html", {"request": request, "now_file_name": now_file_name, "now_progress": now_progress})
-  else:
+  if(make_dataset_task.get_status() == STATUS_FINISH):
     train_data_dir, target_data_dir = make_dataset_task.get_dataset_dir()
     bg_tasks.add_task(train_task, train_data_dir, target_data_dir)
     return RedirectResponse("/train")
+  elif(make_dataset_task.get_status() == STATUS_BEFORE):
+    return RedirectResponse("/")
+  else:
+    now_file_name, now_progress = make_dataset_task.get_progress()
+    return templates.TemplateResponse("load.html", {"request": request, "now_file_name": now_file_name, "now_progress": now_progress})
 
 @app.get("/train")
 async def train(request: Request):

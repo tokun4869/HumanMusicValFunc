@@ -9,7 +9,7 @@ from static_value import *
 class MakeDatasetJob(BaseModel):
   n_aug: int = 10
   sr: int = 48000
-  status: bool = False
+  status: str = STATUS_BEFORE
   now_file_name: str = None
   now_progress: int = None
   train_dataset_dir: str = None
@@ -17,14 +17,12 @@ class MakeDatasetJob(BaseModel):
     
   def __call__(self, file_name_list: "list[str]", answer_list: "list[int]") -> None:
     try:
-      self.status = True
+      self.status = STATUS_INPROGRESS
       self.dataset(file_name_list, answer_list)
     except Exception as e:
-      print(e)
-    finally:
-      self.status = False
-  
-  def get_status(self) -> bool:
+      self.status = STATUS_BEFORE
+
+  def get_status(self) -> str:
     return self.status
 
   def get_progress(self) -> "tuple[str, float]":
@@ -49,6 +47,7 @@ class MakeDatasetJob(BaseModel):
         else:
           target = np.vstack([target, answer])
     self.train_dataset_dir = get_new_file_path(DATASET_ROOT + TRAIN_DIR, train)
-    self.target_dataset_dir = get_new_file_path(DATASET_ROOT + TRAIN_DIR, train)
+    self.target_dataset_dir = get_new_file_path(DATASET_ROOT + TARGET_DIR, target)
     np.save(self.train_dataset_dir, train)
     np.save(self.target_dataset_dir, target)
+    self.status = STATUS_FINISH
