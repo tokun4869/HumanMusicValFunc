@@ -10,18 +10,17 @@ from io_module import get_new_file_path
 from static_value import *
 
 class TrainJob(BaseModel):
-  status: bool = False
+  status: str = STATUS_BEFORE
   now_epoch: int = 0
   train_model_dir: str = None
+  error: str = None
     
-  def __call__(self) -> None:
+  def __call__(self, train_data_dir: str, target_data_dir: str) -> None:
     try:
-      self.status = True
-      self.train()
+      self.status = STATUS_INPROGRESS
+      self.train(train_data_dir, target_data_dir)
     except Exception as e:
-      print(e)
-    finally:
-      self.status = False
+      self.error = str(e)
   
   def get_status(self) -> bool:
     return self.status
@@ -31,6 +30,9 @@ class TrainJob(BaseModel):
   
   def get_model_dir(self) -> str:
     return self.train_model_dir
+  
+  def get_error(self) -> str:
+    return self.error
   
   def get_dataset(self, train_data_dir: str, target_data_dir: str) -> "tuple[np.ndarray[np.float32], np.ndarray[np.float32]]":
     train = np.load(train_data_dir)
@@ -52,7 +54,7 @@ class TrainJob(BaseModel):
     learning_rate = 0.002
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    num_epochs = 1000
+    num_epochs = 500
     
     train_loss_history = []
     valid_loss_history = []
@@ -66,16 +68,15 @@ class TrainJob(BaseModel):
         train = torch.from_numpy(train).float()
         target = torch.from_numpy(target).float()
         if index in index_list:
-          with torch.set_grad_enabled(False):
+          with torch.no_grad():
             model.eval()
             output = model(train)
             valid_loss_list = np.append(valid_loss_list, criterion(output, target).item())
         else:
-          with torch.set_grad_enabled(True):
-            model.train()
-            output = model(train)
-            loss = criterion(output, target)
-            train_loss_list = np.append(train_loss_list, loss.item())
+          model.train()
+          output = model(train)
+          loss = criterion(output, target)
+          train_loss_list = np.append(train_loss_list, loss.item())
       loss.backward()
       optimizer.step()
       train_loss_history.append(train_loss_list.mean())
@@ -84,7 +85,8 @@ class TrainJob(BaseModel):
     plt.plot(train_loss_history, label="train")
     plt.plot(valid_loss_history, label="valid", alpha=0.5)
     plt.legend()
-    plt.savefig(get_new_file_path("figure", "loss", ".png"))
+    plt.savefig(get_new_file_path(GRAPH_ROOT, "loss", ".png"))
 
-    self.train_model_dir = get_new_file_path("model", "train", ".pth")
+    self.train_model_dir = get_new_file_path(MODEL_ROOT, "train", ".pth")
     torch.save(model.state_dict(), self.train_model_dir)
+    self.status = STATUS_FINISH

@@ -15,7 +15,7 @@ def test_output(model_path: str) -> "dict(str, float)":
   model.load_state_dict(torch.load(model_path))
   model.eval()
 
-  file_name_list = get_file_name_list(MUSIC_ROOT + TEST_MUSIC_DIR)
+  file_name_list = get_file_name_list(MUSIC_ROOT + TEST_DIR)
   test_list = feature_list(file_name_list, 48000)
   for _, data in zip(file_name_list, test_list):
     data = torch.from_numpy(data).float()

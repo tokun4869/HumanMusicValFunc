@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -10,4 +11,5 @@ class Model(nn.Module):
   def forward(self, x) -> float:
     x = F.relu(self.fc1(x))
     x = self.fc2(x)
+    x = torch.sigmoid(x) * 10
     return x
