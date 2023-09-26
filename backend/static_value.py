@@ -1,7 +1,9 @@
+SAMPLE_RATE = 48000
 MUSIC_ROOT = "data/music/"
 DATASET_ROOT = "data/np/"
 MODEL_ROOT = "model/"
 GRAPH_ROOT = "graph/"
+FEATURE_ROOT = "feature/"
 TRAIN_DIR = "train/"
 TARGET_DIR = "target/"
 TEST_DIR = "test/"

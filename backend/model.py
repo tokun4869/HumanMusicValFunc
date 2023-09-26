@@ -9,7 +9,6 @@ class Model(nn.Module):
     self.fc2 = nn.Linear(10, 1)
   
   def forward(self, x) -> float:
-    x = F.relu(self.fc1(x))
+    x = F.leaky_relu(self.fc1(x))
     x = self.fc2(x)
-    x = torch.sigmoid(x) * 10
     return x

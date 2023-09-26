@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from model import Model
-from feature import title2feature
+from feature_module import title2feature
 from io_module import get_file_name_list
 
 def feature_list(file_name_list: "list[str]", sr: int):
