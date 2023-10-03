@@ -14,6 +14,7 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 train_task = TrainJob()
 file_name_list = get_file_name_list(MUSIC_ROOT + TRAIN_DIR)
+test_name_list = get_file_name_list(MUSIC_ROOT + TEST_DIR)
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -42,8 +43,8 @@ async def train(request: Request):
     return RedirectResponse("/test")
   elif(status == STATUS_INPROGRESS):
     now_epoch = train_task.get_now_epoch()
-    now_file = train_task.get_now_file()
-    return templates.TemplateResponse("train.html", {"request": request, "now_epoch": now_epoch, "now_file": now_file})
+    num_epochs = train_task.get_num_epochs()
+    return templates.TemplateResponse("train.html", {"request": request, "now_epoch": now_epoch, "num_epochs": num_epochs})
   elif(status == STATUS_BEFORE):
     time.sleep(1)
     return RedirectResponse("/train")
@@ -52,7 +53,7 @@ async def train(request: Request):
 
 @app.get("/test")
 async def test(request: Request):
-  return templates.TemplateResponse("test.html", {"request": request, "file_name_list": file_name_list, "file_rank_list": test_output(train_task.get_model_dir())})
+  return templates.TemplateResponse("test.html", {"request": request, "file_name_list": test_name_list, "file_rank_list": test_output(train_task.get_model_dir())})
 
 if __name__ == "__main__":
   uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

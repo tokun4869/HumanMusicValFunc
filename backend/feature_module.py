@@ -56,7 +56,7 @@ def zero_crossing_rate(y: "np.ndarray[np.float32]") -> "tuple(np.ndarray[np.floa
 
 def title2feature(path: str) -> "np.ndarray[np.float32]":
   y, _ = librosa.load(path, sr=SAMPLE_RATE)
-  return music2feature(y, SAMPLE_RATE)
+  return music2feature(y)
 
 def music2feature(y: "np.ndarray[np.float32]") -> "np.ndarray[np.float32]":
   rms_mean, rms_std = rms(y)

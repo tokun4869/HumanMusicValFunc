@@ -15,8 +15,7 @@ from static_value import *
 class TrainJob(BaseModel):
   status: str = STATUS_BEFORE
   now_epoch: int = 0
-  now_file: str = ""
-  now_value: int = 0
+  num_epochs: int = 100
   train_model_dir: str = None
   error: str = None
     
@@ -34,8 +33,8 @@ class TrainJob(BaseModel):
   def get_now_epoch(self) -> int:
     return self.now_epoch
   
-  def get_now_file(self) -> str:
-    return self.now_file
+  def get_num_epochs(self) -> int:
+    return self.num_epochs
   
   def get_model_dir(self) -> str:
     return self.train_model_dir
@@ -57,7 +56,6 @@ class TrainJob(BaseModel):
     learning_rate = 0.002
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    num_epochs = 100
     
     train_loss_history = []
     valid_loss_history = []
@@ -65,14 +63,13 @@ class TrainJob(BaseModel):
     valid_index_list = [0,2]
 
     # 学習
-    for epoch in range(num_epochs):
+    for epoch in range(self.num_epochs):
       self.now_epoch = epoch
       train_loss_list = np.array([])
       valid_loss_list = np.array([])
       feature_list = np.array([])
       optimizer.zero_grad()
       for index, (file_name, rank) in enumerate(zip(file_name_list, rank_list)):
-        self.now_file = file_name
         feature = self.get_feature(file_name)
         value = self.get_value(rank)
         if feature_list.size == 0:
