@@ -18,6 +18,12 @@ class TrainJob(BaseModel):
   num_epochs: int = 100
   train_model_dir: str = None
   error: str = None
+
+  def initialize(self) -> None:
+    self.status = STATUS_BEFORE
+    self.now_epoch = 0
+    self.train_model_dir = None
+    self.error = None
     
   def __call__(self, train_data_dir: str, target_data_dir: str) -> None:
     try:
