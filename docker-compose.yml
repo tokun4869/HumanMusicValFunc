@@ -18,6 +18,7 @@ services:
     working_dir: "/server"
     ports:
       - "80:80"
+    
   # frontend:
   #  container_name: react
   #  build: ./frontend

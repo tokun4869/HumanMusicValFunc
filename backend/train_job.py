@@ -14,24 +14,30 @@ from static_value import *
 
 class TrainJob(BaseModel):
   status: str = STATUS_BEFORE
+  rank_list: "list[int]" = []
   now_epoch: int = 0
-  num_epochs: int = 100
+  num_epochs: int = 500
   train_model_dir: str = None
   error: str = None
 
   def initialize(self) -> None:
     self.status = STATUS_BEFORE
+    self.rank_list = []
     self.now_epoch = 0
     self.train_model_dir = None
     self.error = None
     
-  def __call__(self, train_data_dir: str, target_data_dir: str) -> None:
+  def __call__(self, file_name_list: str, rank_list: str) -> None:
     try:
+      self.rank_list = rank_list
       self.status = STATUS_INPROGRESS
-      self.train(train_data_dir, target_data_dir)
+      self.train(file_name_list, rank_list)
     except Exception as e:
       self.status = STATUS_ERROR
       self.error = str(e)
+    
+  def get_rank_list(self) -> "list[int]":
+    return self.rank_list
   
   def get_status(self) -> bool:
     return self.status
