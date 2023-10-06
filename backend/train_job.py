@@ -16,7 +16,7 @@ class TrainJob(BaseModel):
   status: str = STATUS_BEFORE
   rank_list: "list[int]" = []
   now_epoch: int = 0
-  num_epochs: int = 500
+  num_epochs: int = 100
   train_model_dir: str = None
   error: str = None
 
@@ -65,7 +65,7 @@ class TrainJob(BaseModel):
   def train(self, file_name_list: "list[str]", rank_list: "list[int]") -> None:
     # モデル設定
     model = Model()
-    learning_rate = 0.002
+    learning_rate = 0.001
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     
@@ -113,6 +113,7 @@ class TrainJob(BaseModel):
     plt.plot(valid_loss_history, label="valid", alpha=0.5)
     plt.legend()
     plt.savefig(get_new_file_path(GRAPH_ROOT, "loss", ".png"))
+    plt.clf()
 
     self.train_model_dir = get_new_file_path(MODEL_ROOT, "model", ".pth")
     torch.save(model.state_dict(), self.train_model_dir)

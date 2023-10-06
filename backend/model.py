@@ -5,8 +5,8 @@ import torch.nn.functional as F
 class Model(nn.Module):
   def __init__(self) -> None:
     super(Model, self).__init__()
-    self.fc1 = nn.Linear(44, 5)
-    self.fc2 = nn.Linear(5, 1)
+    self.fc1 = nn.Linear(132, 50)
+    self.fc2 = nn.Linear(50, 1)
   
   def forward(self, x) -> float:
     x = F.leaky_relu(self.fc1(x))

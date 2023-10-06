@@ -23,8 +23,8 @@ def data_augmentation(y: "np.ndarray[np.float32]") -> "np.ndarray[np.float32]":
 
 def crop(y: "np.ndarray[np.float32]", range: int) -> "np.ndarray[np.float32]":
   if range <= 0: return y
-  l = random.randint(0, len(y)-range-1)
-  r = l + range - 1
+  l = random.randint(0, len(y)-range)
+  r = l + range
   return y[l:r]
 
 def inverse(y: "np.ndarray[np.float32]") -> "np.ndarray[np.float32]":

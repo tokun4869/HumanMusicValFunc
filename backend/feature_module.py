@@ -59,11 +59,28 @@ def title2feature(path: str) -> "np.ndarray[np.float32]":
   return music2feature(y)
 
 def music2feature(y: "np.ndarray[np.float32]") -> "np.ndarray[np.float32]":
-  rms_mean, rms_std = rms(y)
-  mfcc_mean, mfcc_std = mfcc(y)
-  centroid_mean, centroid_std = centroid(y)
-  bandwidth_mean, bandwidth_std = bandwidth(y)
-  tonnetz_mean, tonnetz_std = tonnetz(y)
-  zero_crossing_rate_mean, zero_crossing_rate_std = zero_crossing_rate(y)
-  feature_array = np.concatenate((rms_mean, rms_std, mfcc_mean, mfcc_std, centroid_mean, centroid_std, bandwidth_mean, bandwidth_std, tonnetz_mean, tonnetz_std, zero_crossing_rate_mean, zero_crossing_rate_std))
-  return feature_array
+  feature_array = []
+
+  for index in range(3):
+    l = SAMPLE_RATE * 10 * index
+    r = l + SAMPLE_RATE * 10 * (index + 1)
+    h = y[l:r]
+    rms_mean, rms_std = rms(h)
+    mfcc_mean, mfcc_std = mfcc(h)
+    centroid_mean, centroid_std = centroid(h)
+    bandwidth_mean, bandwidth_std = bandwidth(h)
+    tonnetz_mean, tonnetz_std = tonnetz(h)
+    zero_crossing_rate_mean, zero_crossing_rate_std = zero_crossing_rate(h)
+    feature_array.extend(rms_mean.tolist())
+    feature_array.extend(rms_std.tolist())
+    feature_array.extend(mfcc_mean.tolist())
+    feature_array.extend(mfcc_std.tolist())
+    feature_array.extend(centroid_mean.tolist())
+    feature_array.extend(centroid_std.tolist())
+    feature_array.extend(bandwidth_mean.tolist())
+    feature_array.extend(bandwidth_std.tolist())
+    feature_array.extend(tonnetz_mean.tolist())
+    feature_array.extend(tonnetz_std.tolist())
+    feature_array.extend(zero_crossing_rate_mean.tolist())
+    feature_array.extend(zero_crossing_rate_std.tolist())
+  return np.array(feature_array)

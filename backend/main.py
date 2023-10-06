@@ -18,6 +18,8 @@ test_name_list = get_file_name_list(MUSIC_ROOT + TEST_DIR)
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
+  if train_task.get_status() == STATUS_INPROGRESS:
+    return RedirectResponse("/train")
   train_task.initialize()
   return templates.TemplateResponse("index.html", {"request": request, "file_name_list": file_name_list})
 
