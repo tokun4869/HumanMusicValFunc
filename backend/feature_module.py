@@ -61,10 +61,11 @@ def title2feature(path: str) -> "np.ndarray[np.float32]":
 def music2feature(y: "np.ndarray[np.float32]") -> "np.ndarray[np.float32]":
   feature_array = []
 
-  for index in range(3):
+  for index in range(1):
     l = SAMPLE_RATE * 10 * index
     r = l + SAMPLE_RATE * 10 * (index + 1)
     h = y[l:r]
+    h = y
     rms_mean, rms_std = rms(h)
     mfcc_mean, mfcc_std = mfcc(h)
     centroid_mean, centroid_std = centroid(h)
