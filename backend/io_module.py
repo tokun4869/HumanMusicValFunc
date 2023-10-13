@@ -8,8 +8,14 @@ def load(path: str) -> "np.ndarray[np.float32]":
   y, _ = librosa.load(path, sr=SAMPLE_RATE)
   return y
 
+def __atoi(text: str):
+  return int(text) if text.isdigit() else text
+
+def __natural_keys(text: str):
+  return [__atoi(c) for c in re.split(r"(\d+)", text)]
+
 def get_file_name_list(dir: str) -> "list[str]":
-  return glob.glob(dir + "*.mp3")
+  return sorted(glob.glob(dir + "*.mp3"), key=__natural_keys)
 
 def get_new_file_path(dir: str, base: str, ext: str) -> str:
   file_name_list = glob.glob("{}{}_*{}".format(dir, base, ext))
