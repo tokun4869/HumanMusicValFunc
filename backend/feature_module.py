@@ -7,8 +7,8 @@ import librosa
 
 from static_value import SAMPLE_RATE
 
-def melspectrogram(y: "np.ndarray[np.float32]", n_mels: int=128, fmax: int=8000) -> "np.ndarray[np.float32]":
-  return librosa.feature.melspectrogram(y=y, sr=SAMPLE_RATE, n_mels=n_mels, fmax=fmax)
+def melspectrogram(y: "np.ndarray[np.float32]", n_mels: int=1025) -> "np.ndarray[np.float32]":
+  return librosa.feature.melspectrogram(y=y, sr=SAMPLE_RATE, n_mels=n_mels)
 
 # テンポ
 def bpm(y: "np.ndarray[np.float32]") -> np.float32:
