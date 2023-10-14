@@ -18,6 +18,12 @@ def __natural_keys(text: str):
 def get_file_name_list(dir: str) -> "list[str]":
   return sorted(glob.glob(dir + "*.mp3"), key=__natural_keys)
 
+def get_file_list(file_name_list: "list[str]") -> "list[np.ndarray[np.float32]]":
+  file_list = []
+  for file_name in file_name_list:
+    file_list.append(load(file_name))
+  return file_list
+
 def get_new_file_path(dir: str, base: str, ext: str) -> str:
   file_name_list = glob.glob("{}{}_*{}".format(dir, base, ext))
   max_index = -1
