@@ -4,21 +4,13 @@ import random
 
 from static_value import SAMPLE_RATE
 
-def title2augmusic(path: str) -> "np.ndarray[np.float32]":
-  y, _ = librosa.load(path, sr=SAMPLE_RATE)
-  y = gain(y, 0.1)
-  y = time_shift(y, len(y))
-  y = pitch_shift(y, SAMPLE_RATE, 0.2)
-  y = white_noise(y, 0.02)
-  return y
-
 def data_augmentation(y: "np.ndarray[np.float32]") -> "np.ndarray[np.float32]":
   if True: y = crop(y, SAMPLE_RATE * 30)
-  if random.uniform(0,1) < 0.5: y = inverse(y)
+  # if random.uniform(0,1) < 0.5: y = inverse(y)
   if random.uniform(0,1) < 0.8: y = gain(y, 0.1)
-  if random.uniform(0,1) < 0.3: y = time_shift(y, len(y))
-  if random.uniform(0,1) < 0.1: y = pitch_shift(y, 0.2)
-  if random.uniform(0,1) < 0.3: y = white_noise(y, 0.02)
+  if random.uniform(0,1) < 0.5: y = time_shift(y, len(y))
+  if random.uniform(0,1) < 0.3: y = pitch_shift(y, 0.2)
+  if random.uniform(0,1) < 0.5: y = white_noise(y, 0.02)
   return y
 
 def crop(y: "np.ndarray[np.float32]", range: int) -> "np.ndarray[np.float32]":

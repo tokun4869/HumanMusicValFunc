@@ -4,11 +4,15 @@ import numpy as np
 import torch
 
 from model import Model
-from feature_module import title2feature
-from io_module import get_file_name_list, get_new_file_path
+from feature_module import music2feature, normalization
+from transform_module import crop
+from io_module import get_file_list, get_file_name_list, get_new_file_path
 
 def feature_list(file_name_list: "list[str]") -> "list[np.ndarray[np.float32]]":
-  return [title2feature(file_name) for file_name in file_name_list]
+  file_list = get_file_list(file_name_list)
+  crop_feature_list = [music2feature(crop(file, len(file))) for file in file_list]
+  norm_feature_list = normalization(crop_feature_list)
+  return norm_feature_list
 
 def test_output(model_path: str) -> "dict(str, float)":
   output_list = []

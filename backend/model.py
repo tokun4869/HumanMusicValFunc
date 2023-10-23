@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class Model(nn.Module):
   def __init__(self) -> None:
     super(Model, self).__init__()
-    self.fc1 = nn.Linear(44, 20)
+    self.fc1 = nn.Linear(28, 20)
     self.fc2 = nn.Linear(20, 10)
     self.fc3 = nn.Linear(10, 1)
   
