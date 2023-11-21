@@ -6,7 +6,7 @@ if __name__ == "__main__":
   try:
     model_num = sys.argv[1]
     ext = ".pth"
-    model_path = MODEL_ROOT + MODEL_BASE + "_" + str(model_num) + ext
+    model_path = MODEL_ROOT + str(model_num) + ext
     test_output(model_path)
   except Exception as e:
     print(str(e))
