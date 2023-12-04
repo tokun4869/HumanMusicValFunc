@@ -18,10 +18,10 @@
     </style>
   </head>
   <body>
-    <h1>音楽評価関数の最適化</h1>
-    <h2>1. 評価値の入力</h2>
+    <h1>音楽評価フォーム</h1>
+    <h2>1. {{ dataset }}の評価</h2>
 
-    <form action="/user/answer/" method="post">
+    <form action="/{{answered_url}}" method="post">
       <h3>1.1. trainデータ</h3>
       <label>名前</label>
           <select name="name">
@@ -50,18 +50,18 @@
         <div>
           <label>{{ file_name }}</label>
           <audio controls src={{file_name}}></audio>
-          <label>順位（全て異なる値を入力してください）</label>
+          <label>点数（重複不可）</label>
           <select name="train_{{loop.index0}}">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
             <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+            <option value="60">60</option>
+            <option value="70">70</option>
+            <option value="80">80</option>
+            <option value="90">90</option>
+            <option value="100">100</option>
           </select>
         </div>
       {% endfor %}
@@ -71,8 +71,29 @@
         <div>
           <label>{{ file_name }}</label>
           <audio controls src={{file_name}}></audio>
-          <label>点数</label>
+          <label>点数（重複可能）</label>
           <select name="test_{{loop.index0}}">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+            <option value="60">60</option>
+            <option value="70">70</option>
+            <option value="80">80</option>
+            <option value="90">90</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      {% endfor %}
+
+      <h3>1.3. re-testデータ</h3>
+      {% for file_name in retest_file_name_list %}
+        <div>
+          <label>{{ file_name }}</label>
+          <audio controls src={{file_name}}></audio>
+          <label>点数（重複可能）</label>
+          <select name="retest_{{loop.index0}}">
             <option value="10">10</option>
             <option value="20">20</option>
             <option value="30">30</option>
