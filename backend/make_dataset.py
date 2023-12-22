@@ -4,10 +4,12 @@ import csv
 from module.io import get_file_name_list, load_sound_list, get_new_file_path
 from module.transform import data_augmentation
 from module.feature import music2melspectrogram, music2feature, feature2represent
+from module.util import torch_fix_seed
 from module.const import *
 
 if __name__ == "__main__":
   print("#01 | === load file and set const ===")
+  torch_fix_seed()
   input_dir = f"{MUSIC_ROOT}/{DATASET_TYPE}/{MODE}_{INPUT_KEY}"
   listen_dir = f"{MUSIC_ROOT}/{DATASET_TYPE}/{MODE}_{LISTEN_KEY}"
   file_name_list = get_file_name_list(listen_dir)
@@ -16,11 +18,13 @@ if __name__ == "__main__":
   file_ext = ".npy"
   list_ext = ".csv"
   dataset_dir = f"{DATASET_ROOT}/{DATASET_TYPE}/{MODE}"
+  wave_dataset_base = "wave_dataset"
   spec_dataset_base = "spec_dataset"
   feat_dataset_base = "feat_dataset"
   repr_dataset_base = "repr_dataset"
   
   print("#02 | === make crop file ===")
+  wave_file_name_list = []
   spec_file_name_list = []
   feat_file_name_list = []
   repr_file_name_list = []
@@ -32,6 +36,12 @@ if __name__ == "__main__":
       from_file_name_list.append(file_name)
       new_file = data_augmentation(file)
       file_base = file_name[len(f"{listen_dir}/"):-len(file_ext)]
+
+      wave_file_base = file_base + "_wave"
+      new_wave_file_name = get_new_file_path(input_dir, wave_file_base, file_ext)
+      print("    | -> {}".format(new_wave_file_name))
+      np.save(new_wave_file_name, new_file)
+      wave_file_name_list.append(new_wave_file_name)
 
       spec_file_base = file_base + "_spec"
       new_spec_file_name = get_new_file_path(input_dir, spec_file_base, file_ext)
@@ -55,6 +65,11 @@ if __name__ == "__main__":
       repr_file_name_list.append(new_repr_file_name)
   
   print("#03 | === make csv load file ===")
+  print("    | wave dataset")
+  with open(get_new_file_path(dataset_dir, wave_dataset_base, list_ext), "w") as f:
+    writer = csv.writer(f)
+    writer.writerows(zip(wave_file_name_list, from_file_name_list))
+
   print("    | spec dataset")
   with open(get_new_file_path(dataset_dir, spec_dataset_base, list_ext), "w") as f:
     writer = csv.writer(f)

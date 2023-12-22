@@ -24,9 +24,9 @@ async def root(request: Request):
   train_task.initialize()
   return templates.TemplateResponse("index.html", {"request": request, "file_name_list": input_name_list})
 
-@app.get(f"/{MUSIC_ROOT}/{DATASET_TYPE}/"+"{mode_dir}/{file_name}")
-async def get_music(mode_dir: str, file_name: str):
-  with open(f"{MUSIC_ROOT}/{DATASET_TYPE}/{mode_dir}/{file_name}", "rb") as f:
+@app.get(f"/{MUSIC_ROOT}/"+"{dataset}/{mode_dir}/{file_name}")
+async def get_music(dataset: str, mode_dir: str, file_name: str):
+  with open(f"{MUSIC_ROOT}/{dataset}/{mode_dir}/{file_name}", "rb") as f:
     return Response(content=f.read(), media_type="audio/mp3")
 
 @app.post("/answer")
@@ -57,6 +57,9 @@ async def test(request: Request):
 
 @app.get("/{dataset}", response_class=HTMLResponse)
 async def user_input_page(request: Request, dataset: str):
+  input_name_list = get_file_name_list(f"{MUSIC_ROOT}/{dataset}/{MODE_TRAIN}_{LISTEN_KEY}")
+  test_name_list = get_file_name_list(f"{MUSIC_ROOT}/{dataset}/{MODE_TEST}_{LISTEN_KEY}")
+  retest_name_list = get_file_name_list(f"{MUSIC_ROOT}/{dataset}/{MODE_RETEST}_{LISTEN_KEY}")
   return templates.TemplateResponse("user.html", {"request": request, "dataset": dataset, "answered_url": f"{dataset}/answer", "train_file_name_list": input_name_list, "test_file_name_list": test_name_list, "retest_file_name_list": retest_name_list})
 
 @app.post("/{dataset}/answer/")
@@ -75,9 +78,19 @@ async def save_answer_data(
 async def answer_finish(request: Request, dataset: str):
   return templates.TemplateResponse("userfin.html", {"request": request, "dataset": dataset})
 
-@app.get("/{dataset}"+f"/{MUSIC_ROOT}/{DATASET_TYPE}/"+"{mode_dir}/{file_name}")
-async def get_user_music(mode_dir: str, file_name: str):
-  with open(f"{MUSIC_ROOT}/{DATASET_TYPE}/{mode_dir}/{file_name}", "rb") as f:
+@app.get("/{dataset}"+f"/{MUSIC_ROOT}/{DATASET_MAESTRO}"+"/{mode_dir}/{file_name}")
+async def get_user_maestro_music(mode_dir: str, file_name: str):
+  with open(f"{MUSIC_ROOT}/{DATASET_MAESTRO}/{mode_dir}/{file_name}", "rb") as f:
+    return Response(content=f.read(), media_type="audio/mp3")
+  
+@app.get("/{dataset}"+f"/{MUSIC_ROOT}/{DATASET_MUSICNET}"+"/{mode_dir}/{file_name}")
+async def get_user_musicnet_music(mode_dir: str, file_name: str):
+  with open(f"{MUSIC_ROOT}/{DATASET_MUSICNET}/{mode_dir}/{file_name}", "rb") as f:
+    return Response(content=f.read(), media_type="audio/mp3")
+
+@app.get("/{dataset}"+f"/{MUSIC_ROOT}/{DATASET_MTG}"+"/{mode_dir}/{file_name}")
+async def get_user_musicnet_music(mode_dir: str, file_name: str):
+  with open(f"{MUSIC_ROOT}/{DATASET_MTG}/{mode_dir}/{file_name}", "rb") as f:
     return Response(content=f.read(), media_type="audio/mp3")
 
 if __name__ == "__main__":

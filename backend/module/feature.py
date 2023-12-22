@@ -6,7 +6,7 @@ import numpy as np
 import librosa
 from module.transform import data_augmentation
 from module.const import *
-
+  
 
 def tempogram(y: np.ndarray[np.float32], win_length: int=10) -> np.ndarray[np.float32]:
   """
@@ -26,29 +26,114 @@ def tempogram(y: np.ndarray[np.float32], win_length: int=10) -> np.ndarray[np.fl
   return librosa.feature.tempogram(y=y, sr=SAMPLE_RATE, win_length=win_length)
 
 
-# 音圧
 def rms(y: np.ndarray[np.float32]) -> np.ndarray[np.float32]:
+  """
+  音楽から各時刻の音圧を求める
+  
+  Parameters
+  ----------
+  y : np.ndarray[np.float32]
+    対象の音楽
+  
+  Returns
+  ----------
+  feature : np.ndarray[np.float32]
+    変換後の特徴量
+  """
+
   return librosa.feature.rms(y=y)
 
-# 音色
+
 def mfcc(y: np.ndarray[np.float32], n_mfcc: int=12, dct_type: int=3) -> np.ndarray[np.float32]:
+  """
+  音楽から各時刻のMFCCを求める
+  
+  Parameters
+  ----------
+  y : np.ndarray[np.float32]
+    対象の音楽
+  
+  Returns
+  ----------
+  feature : np.ndarray[np.float32]
+    変換後の特徴量
+  """
+
   return librosa.feature.mfcc(y=y, sr=SAMPLE_RATE, n_mfcc=n_mfcc, dct_type=dct_type)
 
-# 和音に関する特徴量
+
 def tonnetz(y: "np.ndarray[np.float32]") -> np.ndarray[np.float32]:
+  """
+  音楽から各時刻の調性中心特徴を求める
+  
+  Parameters
+  ----------
+  y : np.ndarray[np.float32]
+    対象の音楽
+  
+  Returns
+  ----------
+  feature : np.ndarray[np.float32]
+    変換後の特徴量
+  """
+
   return librosa.feature.tonnetz(y=y, sr=SAMPLE_RATE)
 
-# ゼロ交叉率
+
 def zero_crossing_rate(y: "np.ndarray[np.float32]") -> np.ndarray[np.float32]:
+  """
+  音楽から各時刻の調性中心特徴を求める
+  
+  Parameters
+  ----------
+  y : np.ndarray[np.float32]
+    対象の音楽
+  
+  Returns
+  ----------
+  feature : np.ndarray[np.float32]
+    変換後の特徴量
+  """
+
   return librosa.feature.zero_crossing_rate(y=y)
 
-# 特徴量の平均の計算
+
 def feature_mean(feature: np.ndarray[np.float32]) -> np.ndarray[np.float32]:
+  """
+  特徴量から各次元ごとの平均を求める
+  
+  Parameters
+  ----------
+  y : np.ndarray[np.float32]
+    対象の音楽
+  
+  Returns
+  ----------
+  feature : np.ndarray[np.float32]
+    変換後の特徴量
+  """
+
   return np.mean(feature, axis=1)
 
-# 特徴量の分散の計算
+
 def feature_var(feature: np.ndarray[np.float32]) -> np.ndarray[np.float32]:
+  """
+  特徴量から各次元ごとの分散を求める
+  
+  Parameters
+  ----------
+  y : np.ndarray[np.float32]
+    対象の音楽
+  
+  Returns
+  ----------
+  feature : np.ndarray[np.float32]
+    変換後の特徴量
+  """
+
   return np.var(feature, axis=1)
+
+
 
 # 各特徴量の計算
 def music2feature(y: np.ndarray[np.float32]) -> np.ndarray[np.float32]:
@@ -72,9 +157,12 @@ def music2represent(y: np.ndarray[np.float32]) -> np.ndarray[np.float32]:
   return represent_array
 
 def music2melspectrogram(y: np.ndarray[np.float32]) -> np.ndarray[np.ndarray[np.float32]]:
-  return librosa.feature.melspectrogram(y=y, sr=SAMPLE_RATE)
+  spec = librosa.feature.melspectrogram(y=y, sr=SAMPLE_RATE)
+  return librosa.amplitude_to_db(np.abs(spec))
+
 
 def musics2input(music_list: list[np.ndarray[np.float32]]) -> list[np.ndarray[np.float32]]:
+  return [data_augmentation(y) for y in music_list]
   if MODEL_TYPE == MODEL_SPEC:
     return [music2melspectrogram(data_augmentation(y)) for y in music_list]
   if MODEL_TYPE == MODEL_FEAT:

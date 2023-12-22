@@ -14,7 +14,7 @@ if __name__ == "__main__":
     if num_slice == 0:
       print("slice num [1/1]")
       mp3_file_name = mp3_file_dir + wav_file_name[len(wav_file_dir):-len(".wav")] + "_0.mp3"
-      torchaudio.save(uri=mp3_file_name, src=src_wav, sample_rate=sample_rate, format="mp3")
+      torchaudio.save(uri=mp3_file_name, src=wav_file, sample_rate=sample_rate, format="mp3")
     else:
       for slice_index in range(int(wav_file.size()[1]/sample_length)):
         print(f"slice num [{slice_index+1}/{num_slice}]")

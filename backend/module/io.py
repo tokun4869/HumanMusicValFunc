@@ -8,7 +8,8 @@ import glob
 import re
 import torch
 import csv
-from module.model import ReprMPL, ReprLinearRegression, SpecCNN, FeatCNN, model_select
+from module.model import Model
+from module.exception import InvalidArgumentException
 from module.const import *
 
 
@@ -137,7 +138,7 @@ def get_new_file_path(dir: str, base: str, ext: str) -> str:
   return path
 
 
-def load_model(path: str, is_eval: bool = True) -> (ReprMPL | ReprLinearRegression | SpecCNN | FeatCNN):
+def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE, is_eval: bool = True) -> Model:
   """
   保存されたnn.Moduleモデルを読み込む
   
@@ -145,6 +146,10 @@ def load_model(path: str, is_eval: bool = True) -> (ReprMPL | ReprLinearRegressi
   ----------
   path : str
     対象のファイルパス
+  extractor : str
+    対象の抽出モデル
+  head : str
+    対象の回帰モデル
   is_eval : bool
     読み込み時のモデルが評価モードか
   
@@ -154,7 +159,7 @@ def load_model(path: str, is_eval: bool = True) -> (ReprMPL | ReprLinearRegressi
     読み込んだモデル
   """
 
-  model = model_select()
+  model = Model(extractor, head)
   model.load_state_dict(torch.load(path))
   if is_eval:
     model.eval()
@@ -163,7 +168,7 @@ def load_model(path: str, is_eval: bool = True) -> (ReprMPL | ReprLinearRegressi
   return model
 
 
-def get_dataset_path() -> str:
+def get_dataset_path(extractor_type: str = EXTRACTOR_TYPE) -> str:
   """
   設定からデータセットのパスを取得する
   
@@ -172,12 +177,14 @@ def get_dataset_path() -> str:
   path : str
     取得したパス
   """
-  if MODEL_TYPE == MODEL_SPEC:
+  if extractor_type == EXTRACTOR_REPR:
+    return f"{DATASET_ROOT}/{DATASET_TYPE}/{MODE}/{REPR_DATASET_BASE}{LIST_EXT}"
+  if extractor_type == EXTRACTOR_SPEC:
     return f"{DATASET_ROOT}/{DATASET_TYPE}/{MODE}/{SPEC_DATASET_BASE}{LIST_EXT}"
-  if MODEL_TYPE == MODEL_FEAT:
+  if extractor_type == EXTRACTOR_FEAT:
     return f"{DATASET_ROOT}/{DATASET_TYPE}/{MODE}/{FEAT_DATASET_BASE}{LIST_EXT}"
   else:
-    return f"{DATASET_ROOT}/{DATASET_TYPE}/{MODE}/{REPR_DATASET_BASE}{LIST_EXT}"
+    raise InvalidArgumentException(extractor_type)
 
 
 def load_dataset(dataset_path: str, answer_list: "list[int]", file_name_list: "list[str]" = get_file_name_list(f"{MUSIC_ROOT}/{DATASET_TYPE}/{MODE}_{LISTEN_KEY}")) -> "tuple[list, list[int]]":

@@ -22,8 +22,7 @@
     <h2>1. {{ dataset }}の評価</h2>
 
     <form action="/{{answered_url}}" method="post">
-      <h3>1.1. trainデータ</h3>
-      <label>名前</label>
+      <label>回答者</label>
           <select name="name">
             <option value="B4 小野">B4 小野</option>
             <option value="B4 佐藤（心）">B4 佐藤（心）</option>
@@ -46,6 +45,8 @@
             <option value="M2 吉田">M2 吉田</option>
             <option value="M2 謝">M2 謝</option>
           </select>
+      
+      <h3>1.1. trainデータ</h3>
       {% for file_name in train_file_name_list %}
         <div>
           <label>{{ file_name }}</label>

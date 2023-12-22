@@ -4,7 +4,7 @@ from module.const import *
 
 class TrainDataset(torch.utils.data.Dataset):
   def __init__(self, input_list: list, target_list: list[int]):
-    self.input = input_list if MODEL_TYPE == MODEL_SPEC or MODEL_TYPE == MODEL_FEAT else standardization(input_list)
+    self.input = input_list
     self.target = [(10 - target) * 10.0 for target in target_list]
   
   def __len__(self):
@@ -16,7 +16,7 @@ class TrainDataset(torch.utils.data.Dataset):
 
 class TestDataset(torch.utils.data.Dataset):
   def __init__(self, input_list: list):
-    self.input = input_list if MODEL_TYPE == MODEL_SPEC or MODEL_TYPE == MODEL_FEAT else standardization(input_list)
+    self.input = input_list
   
   def __len__(self):
     return len(self.input)
@@ -31,5 +31,5 @@ def standardization(feature_list: "list[np.ndarray[np.float32]]") -> "list[np.nd
   std_list = np.std(feature_list, axis=0)
   for i, feature in enumerate(feature_list):
     for j, one_feature in enumerate(feature):
-      feature_norm_list[i][j] = (one_feature - mean_list[j]) / std_list[j] if std_list[j] != 0 else 0
+      feature_norm_list[i][j] = (one_feature - mean_list[j]) / std_list[j] if 0 in std_list[j] else 0
   return feature_norm_list
