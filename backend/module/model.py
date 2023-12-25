@@ -164,12 +164,9 @@ class FeatExtractor(nn.Module):
     return torch.cat((tempogram, rms, mfcc, tonnetz, zcr), dim=1)
 
 
-class TransformerExtractor(nn.Module):
+class GRUExtractor(nn.Module):
   def __init__(self) -> None:
     super().__init__()
-    
-    n_head = 4
-    n_layer = 3
 
     tempogram_dim = 10
     rms_dim = 1
@@ -177,43 +174,68 @@ class TransformerExtractor(nn.Module):
     centroid_dim = 1
     zcr_dim = 1
 
-    self.tempogram_seq = nn.Sequential()
-    self.tempogram_seq.add_module("BatchNorm", nn.BatchNorm1d(tempogram_dim))
-    self.tempogram_seq.add_module("TransformerEncoder", nn.TransformerEncoder(nn.TransformerEncoderLayer(1292, n_head, batch_first=True), n_layer))
-    self.tempogram_seq.add_module("Flatten", nn.Flatten())
-    self.tempogram_seq.add_module("Linear", nn.Linear(tempogram_dim * 1292, tempogram_dim * 2))
-    
-    self.rms_seq = nn.Sequential()
-    self.rms_seq.add_module("BatchNorm", nn.BatchNorm1d(rms_dim))
-    self.rms_seq.add_module("TransformerEncoder", nn.TransformerEncoder(nn.TransformerEncoderLayer(1292, n_head, batch_first=True), n_layer))
-    self.rms_seq.add_module("Flatten", nn.Flatten())
-    self.rms_seq.add_module("Linear", nn.Linear(rms_dim * 1292, rms_dim * 2))
-    
-    self.mfcc_seq = nn.Sequential()
-    self.mfcc_seq.add_module("BatchNorm", nn.BatchNorm1d(mfcc_dim))
-    self.mfcc_seq.add_module("TransformerEncoder", nn.TransformerEncoder(nn.TransformerEncoderLayer(1292, n_head, batch_first=True), n_layer))
-    self.mfcc_seq.add_module("Flatten", nn.Flatten())
-    self.mfcc_seq.add_module("Linear", nn.Linear(mfcc_dim * 1292, mfcc_dim * 2))
-    
-    self.centroid_seq = nn.Sequential()
-    self.centroid_seq.add_module("BatchNorm", nn.BatchNorm1d(centroid_dim))
-    self.centroid_seq.add_module("TransformerEncoder", nn.TransformerEncoder(nn.TransformerEncoderLayer(1292, n_head, batch_first=True), n_layer))
-    self.centroid_seq.add_module("Flatten", nn.Flatten())
-    self.centroid_seq.add_module("Linear", nn.Linear(centroid_dim * 1292, centroid_dim * 2))
-    
-    self.zcr_seq = nn.Sequential()
-    self.zcr_seq.add_module("BatchNorm", nn.BatchNorm1d(zcr_dim))
-    self.zcr_seq.add_module("TransformerEncoder", nn.TransformerEncoder(nn.TransformerEncoderLayer(1292, n_head, batch_first=True), n_layer))
-    self.zcr_seq.add_module("Flatten", nn.Flatten())
-    self.zcr_seq.add_module("Linear", nn.Linear(zcr_dim * 1292, zcr_dim * 2))
+    self.tempogram_bn = nn.BatchNorm1d(tempogram_dim)
+    self.tempogram_gru = nn.GRU(1292, 1292, batch_first=True)
+    self.tempogram_flt = nn.Flatten()
+    self.tempogram_fc = nn.Linear(1292, tempogram_dim * 2)
+
+    self.rms_bn = nn.BatchNorm1d(rms_dim)
+    self.rms_gru = nn.GRU(1292, 1292, batch_first=True)
+    self.rms_flt = nn.Flatten()
+    self.rms_fc = nn.Linear(1292, rms_dim * 2)
+
+    self.mfcc_bn = nn.BatchNorm1d(mfcc_dim)
+    self.mfcc_gru = nn.GRU(1292, 1292, batch_first=True)
+    self.mfcc_flt = nn.Flatten()
+    self.mfcc_fc = nn.Linear(1292, mfcc_dim * 2)
+
+    self.centroid_bn = nn.BatchNorm1d(centroid_dim)
+    self.centroid_gru = nn.GRU(1292, 1292, batch_first=True)
+    self.centroid_flt = nn.Flatten()
+    self.centroid_fc = nn.Linear(1292, centroid_dim * 2)
+
+    self.zcr_bn = nn.BatchNorm1d(zcr_dim)
+    self.zcr_gru = nn.GRU(1292, 1292, batch_first=True)
+    self.zcr_flt = nn.Flatten()
+    self.zcr_fc = nn.Linear(1292, zcr_dim * 2)
+  
+  def tempogram_forward(self, x: torch.Tensor) -> torch.Tensor:
+    tempogram = self.tempogram_bn(x)
+    _, h = self.tempogram_gru(tempogram, None)
+    h = self.tempogram_flt(h.transpose(0, 1))
+    return self.tempogram_fc(h)
+  
+  def rms_forward(self, x: torch.Tensor) -> torch.Tensor:
+    rms = self.rms_bn(x)
+    _, h = self.rms_gru(rms, None)
+    h = self.rms_flt(h.transpose(0, 1))
+    return self.rms_fc(h)
+  
+  def mfcc_forward(self, x: torch.Tensor) -> torch.Tensor:
+    mfcc = self.mfcc_bn(x)
+    _, h = self.mfcc_gru(mfcc, None)
+    h = self.mfcc_flt(h.transpose(0, 1))
+    return self.mfcc_fc(h)
+  
+  def centroid_forward(self, x: torch.Tensor) -> torch.Tensor:
+    centroid = self.centroid_bn(x)
+    _, h = self.centroid_gru(centroid, None)
+    h = self.centroid_flt(h.transpose(0, 1))
+    return self.centroid_fc(h)
+  
+  def zcr_forward(self, x: torch.Tensor) -> torch.Tensor:
+    zcr = self.zcr_bn(x)
+    _, h = self.zcr_gru(zcr, None)
+    h = self.zcr_flt(h.transpose(0, 1))
+    return self.zcr_fc(h)
   
   def forward(self, inputs: torch.Tensor) -> torch.Tensor:
     x = music2feature(inputs)
-    tempogram = self.tempogram_seq(x[:, 0:10, :]) # 0 ~ 9
-    rms = self.rms_seq(x[:, 10:11, :])            # 10
-    mfcc = self.mfcc_seq(x[:, 11:23, :])          # 11 ~ 22
-    centroid = self.centroid_seq(x[:, 23:24, :])  # 23
-    zcr = self.zcr_seq(x[:, 24:25, :])            # 24
+    tempogram = self.tempogram_forward(x[:, 0:10, :]) # 0 ~ 9
+    rms = self.rms_forward(x[:, 10:11, :])            # 10
+    mfcc = self.mfcc_forward(x[:, 11:23, :])          # 11 ~ 22       
+    centroid = self.centroid_forward(x[:, 23:24, :])  # 23
+    zcr = self.zcr_forward(x[:, 24:25, :])            # 24
     return torch.cat((tempogram, rms, mfcc, centroid, zcr), dim=1)
 
 
@@ -262,7 +284,7 @@ class Model(nn.Module):
     if extractor_type == EXTRACTOR_SPEC:
       return CRNNExtractor()
     if extractor_type == EXTRACTOR_FEAT:
-      return TransformerExtractor()
+      return GRUExtractor()
     if True:
       raise InvalidArgumentException(extractor_type)
   
