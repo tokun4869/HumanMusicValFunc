@@ -3,11 +3,13 @@ import torchaudio
 from module.const import *
 
 
-def novelty_function(y: torch.Tensor, n_fft: int=N_FFT, hop_length: int=HOP_LENGTH) -> torch.Tensor:
-    raw_s: torch.Tensor = torchaudio.transforms.Spectrogram(n_fft=n_fft, hop_length=hop_length, power=None)(y)
+def novelty_function(y: torch.Tensor, n_fft: int=N_FFT, hop_length: int=HOP_LENGTH, device: torch.device=torch.device("cpu")) -> torch.Tensor:
+    transform = torchaudio.transforms.Spectrogram(n_fft=n_fft, hop_length=hop_length, power=None)
+    transform = transform.to(device)
+    raw_s: torch.Tensor = transform(y)
     S = torch.log(torch.abs(raw_s.real)+1e-9)
     batch_size, _, n_timesteps = S.shape
-    spectral_novelty = torch.zeros(batch_size, n_timesteps)
+    spectral_novelty = torch.zeros(batch_size, n_timesteps).to(device)
     tmp = S[:, :, 1:] - S[:, :, :-1]
     tmp = torch.where(tmp < 0, 0, tmp)
     spectral_novelty[:, 0:-1] = torch.sum(tmp, dim=-2)
@@ -16,10 +18,10 @@ def novelty_function(y: torch.Tensor, n_fft: int=N_FFT, hop_length: int=HOP_LENG
     return spectral_novelty
 
 
-def calc_tempogram(y: torch.Tensor, frame_length: int=10, hop_length: int=1) -> torch.Tensor:
-    nf = novelty_function(y)
+def calc_tempogram(y: torch.Tensor, frame_length: int=10, hop_length: int=1, device: torch.device=torch.device("cpu")) -> torch.Tensor:
+    nf = novelty_function(y, device=device)
     n_wins = nf.shape[-1] // hop_length if nf.shape[-1] % hop_length == 0 else nf.shape[-1] // hop_length + 1
-    odf_frame = torch.zeros(nf.shape[0], n_wins, frame_length)
+    odf_frame = torch.zeros(nf.shape[0], n_wins, frame_length).to(device)
 
     nf_shape_end = nf.shape[-1]
     padding = [0] * len(nf.shape) * 2
@@ -29,7 +31,7 @@ def calc_tempogram(y: torch.Tensor, frame_length: int=10, hop_length: int=1) -> 
     padding = tuple(padding)
     nf = torch.nn.functional.pad(nf, pad=padding)
 
-    window = torch.hann_window(frame_length)
+    window = torch.hann_window(frame_length).to(device)
     window = torch.unsqueeze(window, dim=0)
     window = window.expand(nf.shape[0], window.shape[-1])
 

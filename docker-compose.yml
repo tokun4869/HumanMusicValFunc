@@ -10,6 +10,14 @@ services:
       - 8000
     depends_on:
       - server
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
   server:
     container_name: "nginx"
     build: ./server

@@ -1,28 +1,24 @@
+import torch
 from torchinfo import summary
-from module.model import ReprMPL, ReprLinearRegression, SpecCNN, FeatCNN 
+from module.model import Model
 from module.const import *
 
 if __name__ == "__main__":
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     summary(
-        ReprMPL(),
-        input_size = (BATCH_SIZE, 60),
+        Model(EXTRACTOR_REPR, HEAD_MLP, device),
+        input_size = (BATCH_SIZE, 661500),
         col_names=["output_size", "num_params"]
     )
 
     summary(
-        ReprLinearRegression(),
-        input_size = (BATCH_SIZE, 60),
+        Model(EXTRACTOR_SPEC, HEAD_MLP, device),
+        input_size = (BATCH_SIZE, 661500),
         col_names=["output_size", "num_params"]
     )
 
     summary(
-        SpecCNN(),
-        input_size = (BATCH_SIZE, 1, 128, 1292),
-        col_names=["output_size", "num_params"]
-    )
-
-    summary(
-        FeatCNN(),
-        input_size = (BATCH_SIZE, 30, 1292),
+        Model(EXTRACTOR_FEAT, HEAD_MLP, device),
+        input_size = (BATCH_SIZE, 661500),
         col_names=["output_size", "num_params"]
     )

@@ -8,19 +8,22 @@ from module.const import *
 
 
 # ===== ===== ===== =====
+# Normalize
+# ===== ===== ===== =====
+def normalize(x: torch.Tensor) -> torch.Tensor:
+  return (x - torch.mean(x)) / (torch.sqrt(torch.var(x) + 1e-05))
+
+
+# ===== ===== ===== =====
 # Extractor
 # ===== ===== ===== =====
 class ReprExtractor(nn.Module):
-  def __init__(self) -> None:
+  def __init__(self, device: torch.device=torch.device("cpu")) -> None:
     super().__init__()
+    self.device = device
   
-  def forward(self, inputs, required_func: bool = True) -> torch.Tensor: 
-    if required_func:
-      x = music2represent(inputs)
-      return x
-      # return torch.Tensor(np.array([music2represent(wave) for wave in inputs]))
-    else:
-      return inputs
+  def forward(self, x: torch.Tensor) -> torch.Tensor: 
+    return music2represent(x, self.device)
 
 
 class SpecExtractor(nn.Module):
@@ -55,8 +58,10 @@ class SpecExtractor(nn.Module):
   
 
 class CRNNExtractor(nn.Module):
-  def __init__(self) -> None:
+  def __init__(self, device: torch.device=torch.device("cpu")) -> None:
     super().__init__()
+    self.device = device
+
     in_channels = [1, 30, 60, 60]
     out_channels = [30, 60, 60, 60]
     kernel_sizes = [3, 3, 3, 3]
@@ -73,100 +78,27 @@ class CRNNExtractor(nn.Module):
       self.cnn.add_module(f"ReLU_{index}", nn.ReLU())
       self.cnn.add_module(f"Pool_{index}", nn.MaxPool2d(pool_sizes[index]))
     self.cnn.add_module("Flatten", nn.Flatten())
-
+    
     self.rnn = nn.GRU(780, 780, 2)
 
     self.fc = nn.Linear(780, 50)
 
+    self.cnn = self.cnn.to(device)
+    self.rnn = self.rnn.to(device)
+    self.fc = self.fc.to(device)
+
   def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-    x = music2melspectrogram(inputs).unsqueeze(dim=1)
+    x = music2melspectrogram(inputs, self.device).unsqueeze(dim=1)
     x = self.cnn(x)
     x, h = self.rnn(x, None)
     x = self.fc(x)
     return x
 
 
-class FeatExtractor(nn.Module):
-  def __init__(self) -> None:
-    super().__init__()
-    tempogram_channels = [[10, 20], [20, 30]]
-    rms_channels = [[1, 2], [2, 4]]
-    mfcc_channels = [[12, 24], [24, 48]]
-    tonnetz_channels = [[6, 12], [12, 24]]
-    zcr_channels = [[1, 2], [2, 4]]
-    kernel_sizes = [3, 3]
-    strides = [1, 1]
-    paddings = [1, 1]
-    pool_sizes = [2, 2]
-    sequence_len = 2
-
-    # 10 x 1292 -> 20 x 646 -> 30 x 323 -> 9690
-    self.tempogram_seq = nn.Sequential()
-    for index in range(sequence_len):
-      self.tempogram_seq.add_module(f"tempogram_Conv1d_{index}", nn.Conv1d(tempogram_channels[0][index], tempogram_channels[1][index], kernel_size=kernel_sizes[index], stride=strides[index], padding=paddings[index]))
-      # self.tempogram_seq.add_module(f"tempogram_BN1d_{index}", nn.BatchNorm1d(tempogram_channels[1][index]))
-      self.tempogram_seq.add_module(f"tempogram_ReLU_{index}", nn.ReLU())
-      self.tempogram_seq.add_module(f"tempogram_Pool_{index}", nn.MaxPool1d(pool_sizes[index]))
-    self.tempogram_seq.add_module("tempogram_Flatten", nn.Flatten())
-    self.tempogram_seq.add_module("tempogram_fc", nn.Linear(9690, 20))
-
-    # 1 x 1292 -> 2 x 646 -> 4 x 323 -> 1292
-    self.rms_seq = nn.Sequential()
-    for index in range(sequence_len):
-      self.rms_seq.add_module(f"rms_Conv1d_{index}", nn.Conv1d(rms_channels[0][index], rms_channels[1][index], kernel_size=kernel_sizes[index], stride=strides[index], padding=paddings[index]))
-      # self.rms_seq.add_module(f"rms_BN1d_{index}", nn.BatchNorm1d(rms_channels[1][index]))
-      self.rms_seq.add_module(f"rms_ReLU_{index}", nn.ReLU())
-      self.rms_seq.add_module(f"rms_Pool_{index}", nn.MaxPool1d(pool_sizes[index]))
-    self.rms_seq.add_module("rms_Flatten", nn.Flatten())
-    self.rms_seq.add_module("rms_fc", nn.Linear(1292, 2))
-
-    # 12 x 1292 -> 24 x 646 -> 48 x 323 -> 15504
-    self.mfcc_seq = nn.Sequential()
-    for index in range(sequence_len):
-      self.mfcc_seq.add_module(f"mfcc_Conv1d_{index}", nn.Conv1d(mfcc_channels[0][index], mfcc_channels[1][index], kernel_size=kernel_sizes[index], stride=strides[index], padding=paddings[index]))
-      # self.mfcc_seq.add_module(f"mfcc_BN1d_{index}", nn.BatchNorm1d(mfcc_channels[1][index]))
-      self.mfcc_seq.add_module(f"mfcc_ReLU_{index}", nn.ReLU())
-      self.mfcc_seq.add_module(f"mfcc_Pool_{index}", nn.MaxPool1d(pool_sizes[index]))
-    self.mfcc_seq.add_module("mfcc_Flatten", nn.Flatten())
-    self.mfcc_seq.add_module("mfcc_fc", nn.Linear(15504, 24))
-
-    # 6 x 1292 -> 12 x 646 -> 24 x 323 -> 7752
-    self.tonnetz_seq = nn.Sequential()
-    for index in range(sequence_len):
-      self.tonnetz_seq.add_module(f"tonnetz_Conv1d_{index}", nn.Conv1d(tonnetz_channels[0][index], tonnetz_channels[1][index], kernel_size=kernel_sizes[index], stride=strides[index], padding=paddings[index]))
-      # self.tonnetz_seq.add_module(f"tonnetz_BN1d_{index}", nn.BatchNorm1d(tonnetz_channels[1][index]))
-      self.tonnetz_seq.add_module(f"tonnetz_ReLU_{index}", nn.ReLU())
-      self.tonnetz_seq.add_module(f"tonnetz_Pool_{index}", nn.MaxPool1d(pool_sizes[index]))
-    self.tonnetz_seq.add_module("tonnetz_Flatten", nn.Flatten())
-    self.tonnetz_seq.add_module("tonnetz_fc", nn.Linear(7752, 12))
-
-    # 1 x 1292 -> 2 x 646 -> 4 x 323 -> 1292
-    self.zcr_seq = nn.Sequential()
-    for index in range(sequence_len):
-      self.zcr_seq.add_module(f"zcr_Conv1d_{index}", nn.Conv1d(zcr_channels[0][index], zcr_channels[1][index], kernel_size=kernel_sizes[index], stride=strides[index], padding=paddings[index]))
-      # self.zcr_seq.add_module(f"zcr_BN1d_{index}", nn.BatchNorm1d(zcr_channels[1][index]))
-      self.zcr_seq.add_module(f"zcr_ReLU_{index}", nn.ReLU())
-      self.zcr_seq.add_module(f"zcr_Pool_{index}", nn.MaxPool1d(pool_sizes[index]))
-    self.zcr_seq.add_module("zcr_Flatten", nn.Flatten())
-    self.zcr_seq.add_module("zcr_fc", nn.Linear(1292, 2))
-  
-  def forward(self, inputs, required_func: bool = True) -> torch.Tensor:
-    if required_func:
-      x = music2feature(inputs)
-      x = torch.nn.functional.normalize(x, dim=-1)
-    else:
-      x = inputs
-    tempogram = self.tempogram_seq(x[:, 0:10, :]) # 0 ~ 9
-    rms = self.rms_seq(x[:, 10:11, :])            # 10
-    mfcc = self.mfcc_seq(x[:, 11:23, :])          # 11 ~ 22
-    tonnetz = self.tonnetz_seq(x[:, 23:29, :])    # 23 ~ 28
-    zcr = self.zcr_seq(x[:, 29:30, :])            # 29
-    return torch.cat((tempogram, rms, mfcc, tonnetz, zcr), dim=1)
-
-
 class GRUExtractor(nn.Module):
-  def __init__(self) -> None:
+  def __init__(self, device: torch.device=torch.device("cpu")) -> None:
     super().__init__()
+    self.device = device
 
     tempogram_dim = 10
     rms_dim = 1
@@ -174,30 +106,30 @@ class GRUExtractor(nn.Module):
     centroid_dim = 1
     zcr_dim = 1
 
-    self.tempogram_bn = nn.BatchNorm1d(tempogram_dim)
-    self.tempogram_gru = nn.GRU(1292, 1292, batch_first=True)
-    self.tempogram_flt = nn.Flatten()
-    self.tempogram_fc = nn.Linear(1292, tempogram_dim * 2)
+    self.tempogram_bn = nn.BatchNorm1d(tempogram_dim).to(device)
+    self.tempogram_gru = nn.GRU(1292, 1292, batch_first=True).to(device)
+    self.tempogram_flt = nn.Flatten().to(device)
+    self.tempogram_fc = nn.Linear(1292, tempogram_dim * 2).to(device)
 
-    self.rms_bn = nn.BatchNorm1d(rms_dim)
-    self.rms_gru = nn.GRU(1292, 1292, batch_first=True)
-    self.rms_flt = nn.Flatten()
-    self.rms_fc = nn.Linear(1292, rms_dim * 2)
+    self.rms_bn = nn.BatchNorm1d(rms_dim).to(device)
+    self.rms_gru = nn.GRU(1292, 1292, batch_first=True).to(device)
+    self.rms_flt = nn.Flatten().to(device)
+    self.rms_fc = nn.Linear(1292, rms_dim * 2).to(device)
 
-    self.mfcc_bn = nn.BatchNorm1d(mfcc_dim)
-    self.mfcc_gru = nn.GRU(1292, 1292, batch_first=True)
-    self.mfcc_flt = nn.Flatten()
-    self.mfcc_fc = nn.Linear(1292, mfcc_dim * 2)
+    self.mfcc_bn = nn.BatchNorm1d(mfcc_dim).to(device)
+    self.mfcc_gru = nn.GRU(1292, 1292, batch_first=True).to(device)
+    self.mfcc_flt = nn.Flatten().to(device)
+    self.mfcc_fc = nn.Linear(1292, mfcc_dim * 2).to(device)
 
-    self.centroid_bn = nn.BatchNorm1d(centroid_dim)
-    self.centroid_gru = nn.GRU(1292, 1292, batch_first=True)
-    self.centroid_flt = nn.Flatten()
-    self.centroid_fc = nn.Linear(1292, centroid_dim * 2)
+    self.centroid_bn = nn.BatchNorm1d(centroid_dim).to(device)
+    self.centroid_gru = nn.GRU(1292, 1292, batch_first=True).to(device)
+    self.centroid_flt = nn.Flatten().to(device)
+    self.centroid_fc = nn.Linear(1292, centroid_dim * 2).to(device)
 
-    self.zcr_bn = nn.BatchNorm1d(zcr_dim)
-    self.zcr_gru = nn.GRU(1292, 1292, batch_first=True)
-    self.zcr_flt = nn.Flatten()
-    self.zcr_fc = nn.Linear(1292, zcr_dim * 2)
+    self.zcr_bn = nn.BatchNorm1d(zcr_dim).to(device)
+    self.zcr_gru = nn.GRU(1292, 1292, batch_first=True).to(device)
+    self.zcr_flt = nn.Flatten().to(device)
+    self.zcr_fc = nn.Linear(1292, zcr_dim * 2).to(device)
   
   def tempogram_forward(self, x: torch.Tensor) -> torch.Tensor:
     tempogram = self.tempogram_bn(x)
@@ -230,7 +162,7 @@ class GRUExtractor(nn.Module):
     return self.zcr_fc(h)
   
   def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-    x = music2feature(inputs)
+    x = music2feature(inputs, self.device)
     tempogram = self.tempogram_forward(x[:, 0:10, :]) # 0 ~ 9
     rms = self.rms_forward(x[:, 10:11, :])            # 10
     mfcc = self.mfcc_forward(x[:, 11:23, :])          # 11 ~ 22       
@@ -245,12 +177,12 @@ class GRUExtractor(nn.Module):
 class HeadMLP(nn.Module):
   def __init__(self) -> None:
     super().__init__()
-    self.bn = nn.BatchNorm1d(50)
     self.fc1 = nn.Linear(50, 10)
     self.fc2 = nn.Linear(10, 1)
   
-  def forward(self, x) -> float:
-    x = F.leaky_relu(self.fc1(self.bn(x)))
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    x = normalize(x)
+    x = F.leaky_relu(self.fc1(x))
     x = self.fc2(x)
     return x
 
@@ -268,23 +200,26 @@ class HeadLR(nn.Module):
 # Extractor + Head
 # ===== ===== ===== =====
 class Model(nn.Module):
-  def __init__(self, extractor: str=EXTRACTOR_TYPE, head: str=HEAD_TYPE) -> None:
+  def __init__(self, extractor: str=EXTRACTOR_TYPE, head: str=HEAD_TYPE, device: torch.device=torch.device("cpu")) -> None:
     super().__init__()
-    self.extractor = self.__select_extractor(extractor)
+    self.extractor = self.__select_extractor(extractor, device)
+    self.extractor = self.extractor.to(device)
     self.head = self.__select_head(head)
+    self.head = self.head.to(device)
+    self.device = device
   
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     z = self.extractor(x)
     out = self.head(z)
     return out
 
-  def __select_extractor(self, extractor_type: str) -> ReprExtractor | SpecExtractor | FeatExtractor:
+  def __select_extractor(self, extractor_type: str, device: torch.device=torch.device("cpu")) -> ReprExtractor | CRNNExtractor | GRUExtractor:
     if extractor_type == EXTRACTOR_REPR:
-      return ReprExtractor()
+      return ReprExtractor(device)
     if extractor_type == EXTRACTOR_SPEC:
-      return CRNNExtractor()
+      return CRNNExtractor(device)
     if extractor_type == EXTRACTOR_FEAT:
-      return GRUExtractor()
+      return GRUExtractor(device)
     if True:
       raise InvalidArgumentException(extractor_type)
   

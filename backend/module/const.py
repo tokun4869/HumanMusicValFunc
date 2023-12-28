@@ -3,8 +3,8 @@
 # ===== ===== ===== =====
 
 
-DATASET_TYPE = "MAESTRO"
-EXTRACTOR_TYPE = "FEAT"
+DATASET_TYPE = "MTG-Jamendo"
+EXTRACTOR_TYPE = "SPEC"
 HEAD_TYPE = "MLP"
 MODE = "train"
 
@@ -26,6 +26,7 @@ LOSS_ROOT = "loss"
 MODEL_ROOT = "model"
 RESULT_ROOT = "result"
 USER_ROOT = "user"
+TIME_ROOT = "time"
 
 STATUS_BEFORE = "before"
 STATUS_INPROGRESS = "inprogress"

@@ -2,6 +2,7 @@
 # io Module
 # ===== ===== ===== =====
 
+from pickle import LIST
 import numpy as np
 import librosa
 import glob
@@ -138,7 +139,7 @@ def get_new_file_path(dir: str, base: str, ext: str) -> str:
   return path
 
 
-def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE, is_eval: bool = True) -> Model:
+def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE, is_eval: bool = True, device: torch.device=torch.device("cpu")) -> Model:
   """
   保存されたnn.Moduleモデルを読み込む
   
@@ -159,7 +160,7 @@ def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE
     読み込んだモデル
   """
 
-  model = Model(extractor, head)
+  model = Model(extractor, head, device)
   model.load_state_dict(torch.load(path))
   if is_eval:
     model.eval()
@@ -253,21 +254,45 @@ def load_user_data(file_name: str) -> list[int]:
   
   Returns
   ----------
-  target_list : list[numpy.ndarray]
+  target_list : list[int]
     正解データの配列
   """
-
   with open(file_name, "r") as f:
     reader = csv.reader(f)
+    l = [row for row in reader]
     if MODE == MODE_TEST:
-      return reader[1]
+      target_list = [int(data) for data in l[1]]
     if MODE == MODE_RETEST:
-      return reader[2]
+      target_list = [int(data) for data in l[2]]
     else:
-      return reader[0]
+      target_list = [int(data) for data in l[0]]
+  
+  return target_list
 
 
-def load_all_user_data() -> list[list[int]]:
+def get_label_from_user_data(file_path: str) -> str:
+  """
+  指定した回答データからユーザ名とデータセット名からなるラベルを取り出す
+
+  Parameters
+  ----------
+  file_path: str
+    回答データのパス
+  
+  Returns
+  ----------
+  label : str
+    ユーザ名とデータセット名からなるラベル
+  """
+  file_name = file_path.split("/")[-1]
+  user_name = file_name.split(".")[0]
+  dataset_name = file_path.split("/")[-2]
+  label = f"{dataset_name}_{EXTRACTOR_TYPE}_{user_name}"
+
+  return label
+
+
+def load_all_user_data() -> tuple[list[list[int]], list[str]]:
   """
   全回答データを読み込む
   
@@ -275,8 +300,11 @@ def load_all_user_data() -> list[list[int]]:
   ----------
   answer_list_list : list[list[int]]
     全員の正解データの配列
+  label_list : list[list[int]]
+    全員のラベルの配列
   """
-  file_path_list = get_file_name_list(f"{USER_ROOT}/{DATASET_TYPE}")
+  file_path_list = get_file_name_list(f"{USER_ROOT}/{DATASET_TYPE}", ext=LIST_EXT)
+  label_list = [get_label_from_user_data(file_path) for file_path in file_path_list]
   answer_list_list = [load_user_data(file_path) for file_path in file_path_list]
   
-  return answer_list_list
+  return answer_list_list, label_list

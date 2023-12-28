@@ -1,6 +1,8 @@
 import random
+import math
 import numpy as np
 import torch
+from module.model import Model
 from module.const import SEED
 
 def torch_fix_seed(seed=SEED):
@@ -13,3 +15,71 @@ def torch_fix_seed(seed=SEED):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.use_deterministic_algorithms = True
+
+
+class EarlyStop:
+    def __init__(
+        self,
+        model_path: str,
+        threshold: int=10,
+        range: float=1e-2
+    ) -> None:
+
+        self.model_path = model_path
+        self.threshold = threshold
+        self.range = range
+        self.best_loss = None
+        self.count = 0
+        self.stop_flag = False
+    
+
+    def __call__(
+        self,
+        loss: float,
+        model: Model
+    ) -> bool:
+
+        if self.best_loss is None:
+            self.best_update(loss=loss, model=model)
+        elif self.is_maintain(loss=loss):
+            self.count_up()
+        elif self.best_loss > loss:
+            self.best_update(loss=loss, model=model)
+        else:
+            self.count_up()
+        
+        return self.stop_flag
+    
+
+    def best_update(
+        self,
+        loss: float,
+        model: Model
+    ) -> None:
+
+        self.best_loss = loss
+        self.count = 0
+        self.checkpoint(model=model)
+    
+
+    def checkpoint(
+        self,
+        model: Model
+    ) -> None:
+
+        torch.save(model.state_dict(), self.model_path)
+    
+
+    def is_maintain(
+        self,
+        loss: float,
+    ) -> bool:
+
+        return abs(self.best_loss - loss) < self.range
+
+
+    def count_up(
+        self,
+    ) -> None:
+        self.count += 1
+        self.stop_flag = self.count >= self.threshold
