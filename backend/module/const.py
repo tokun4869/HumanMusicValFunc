@@ -3,8 +3,8 @@
 # ===== ===== ===== =====
 
 
-DATASET_TYPE = "MTG-Jamendo"
-EXTRACTOR_TYPE = "SPEC"
+DATASET_TYPE = "MAESTRO"
+EXTRACTOR_TYPE = "REPR"
 HEAD_TYPE = "MLP"
 MODE = "train"
 

@@ -24,37 +24,6 @@ class ReprExtractor(nn.Module):
   
   def forward(self, x: torch.Tensor) -> torch.Tensor: 
     return music2represent(x, self.device)
-
-
-class SpecExtractor(nn.Module):
-  def __init__(self) -> None:
-    super().__init__()
-    in_channels = [1, 2, 4]
-    out_channels = [2, 4, 8]
-    kernel_sizes = [3, 3, 3]
-    strides = [1, 1, 1]
-    paddings = [1, 1, 1]
-    pool_sizes = [2, 2, 2]
-    sequence_len = 3
-
-    # 1 x 128 x 1292 -> 128 x 64 x 646 -> 4 x 32 x 323 -> 8 x 16 x 161 -> 20608
-    self.sequence = nn.Sequential()
-    for index in range(sequence_len):
-      # self.sequence.add_module(f"BN2d_{index}", nn.BatchNorm2d(in_channels[index]))
-      self.sequence.add_module(f"Conv2d_{index}", nn.Conv2d(in_channels[index], out_channels[index], kernel_size=kernel_sizes[index], stride=strides[index], padding=paddings[index]))
-      self.sequence.add_module(f"ReLU_{index}", nn.ReLU())
-      self.sequence.add_module(f"Pool_{index}", nn.MaxPool2d(pool_sizes[index]))
-    self.sequence.add_module("Flatten", nn.Flatten())
-    self.sequence.add_module("fc", nn.Linear(20608, 50))
-
-  
-  def forward(self, inputs: torch.Tensor, required_func: bool = True) -> torch.Tensor:
-    if required_func:
-      x = music2melspectrogram(inputs).unsqueeze(dim=1)
-      x = torch.nn.functional.normalize(x, dim=-1)
-    else:
-      x = inputs.unsqueeze(dim=1)
-    return self.sequence(x)
   
 
 class CRNNExtractor(nn.Module):
