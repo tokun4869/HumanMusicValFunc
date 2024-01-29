@@ -139,7 +139,7 @@ def get_new_file_path(dir: str, base: str, ext: str) -> str:
   return path
 
 
-def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE, is_eval: bool = True, device: torch.device=torch.device("cpu")) -> Model:
+def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE, is_eval: bool = True, device: torch.device=torch.device("cpu"), feat_extract: bool=True) -> Model:
   """
   保存されたnn.Moduleモデルを読み込む
   
@@ -160,7 +160,7 @@ def load_model(path: str, extractor: str = EXTRACTOR_TYPE, head: str = HEAD_TYPE
     読み込んだモデル
   """
 
-  model = Model(extractor, head, device)
+  model = Model(extractor, head, device, feat_extract).to(device)
   model.load_state_dict(torch.load(path))
   if is_eval:
     model.eval()
@@ -243,7 +243,7 @@ def save_user_data(dataset: str, name: str, train_list: list[int], test_list: li
     writer.writerow(retest_list)
 
 
-def load_user_data(file_name: str) -> list[int]:
+def load_user_data(file_name: str, mode: str) -> list[int]:
   """
   指定した回答データを読み込む
 
@@ -260,9 +260,9 @@ def load_user_data(file_name: str) -> list[int]:
   with open(file_name, "r") as f:
     reader = csv.reader(f)
     l = [row for row in reader]
-    if MODE == MODE_TEST:
+    if mode == MODE_TEST:
       target_list = [int(data) for data in l[1]]
-    if MODE == MODE_RETEST:
+    if mode == MODE_RETEST:
       target_list = [int(data) for data in l[2]]
     else:
       target_list = [int(data) for data in l[0]]
@@ -270,9 +270,9 @@ def load_user_data(file_name: str) -> list[int]:
   return target_list
 
 
-def get_label_from_user_data(file_path: str) -> str:
+def get_user_name(file_path: str) -> str:
   """
-  指定した回答データからユーザ名とデータセット名からなるラベルを取り出す
+  指定した回答データからユーザ名を取り出す
 
   Parameters
   ----------
@@ -281,18 +281,16 @@ def get_label_from_user_data(file_path: str) -> str:
   
   Returns
   ----------
-  label : str
+  user_name : str
     ユーザ名とデータセット名からなるラベル
   """
   file_name = file_path.split("/")[-1]
   user_name = file_name.split(".")[0]
-  dataset_name = file_path.split("/")[-2]
-  label = f"{dataset_name}_{EXTRACTOR_TYPE}_{user_name}"
 
-  return label
+  return user_name
 
 
-def load_all_user_data() -> tuple[list[list[int]], list[str]]:
+def load_all_user_data(dataset_type: str, mode: str) -> tuple[list[list[int]], list[str]]:
   """
   全回答データを読み込む
   
@@ -303,8 +301,13 @@ def load_all_user_data() -> tuple[list[list[int]], list[str]]:
   label_list : list[list[int]]
     全員のラベルの配列
   """
-  file_path_list = get_file_name_list(f"{USER_ROOT}/{DATASET_TYPE}", ext=LIST_EXT)
-  label_list = [get_label_from_user_data(file_path) for file_path in file_path_list]
-  answer_list_list = [load_user_data(file_path) for file_path in file_path_list]
+  file_path_list = get_file_name_list(f"{USER_ROOT}/{dataset_type}", ext=LIST_EXT)
+  label_list = [get_user_name(file_path) for file_path in file_path_list]
+  answer_list_list = [load_user_data(file_path, mode=mode) for file_path in file_path_list]
   
   return answer_list_list, label_list
+
+def get_model_path_list(key: str):
+  all_model_path_list = get_file_name_list(f"{MODEL_ROOT}", ext=MODEL_EXT)
+  model_path_list = [model_path for model_path in all_model_path_list if key in model_path]
+  return model_path_list

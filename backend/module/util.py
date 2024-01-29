@@ -1,5 +1,4 @@
 import random
-import math
 import numpy as np
 import torch
 from module.model import Model
@@ -22,12 +21,10 @@ class EarlyStop:
         self,
         model_path: str,
         threshold: int=10,
-        range: float=1e-2
     ) -> None:
 
         self.model_path = model_path
         self.threshold = threshold
-        self.range = range
         self.best_loss = None
         self.count = 0
         self.stop_flag = False
@@ -41,8 +38,6 @@ class EarlyStop:
 
         if self.best_loss is None:
             self.best_update(loss=loss, model=model)
-        elif self.is_maintain(loss=loss):
-            self.count_up()
         elif self.best_loss > loss:
             self.best_update(loss=loss, model=model)
         else:
@@ -68,14 +63,6 @@ class EarlyStop:
     ) -> None:
 
         torch.save(model.state_dict(), self.model_path)
-    
-
-    def is_maintain(
-        self,
-        loss: float,
-    ) -> bool:
-
-        return abs(self.best_loss - loss) < self.range
 
 
     def count_up(

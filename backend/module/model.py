@@ -11,25 +11,30 @@ from module.const import *
 # Normalize
 # ===== ===== ===== =====
 def normalize(x: torch.Tensor) -> torch.Tensor:
-  return (x - torch.mean(x)) / (torch.sqrt(torch.var(x) + 1e-05))
+  return (x - torch.mean(x)) / torch.sqrt(torch.var(x) + 1e-05)
 
 
 # ===== ===== ===== =====
 # Extractor
 # ===== ===== ===== =====
 class ReprExtractor(nn.Module):
-  def __init__(self, device: torch.device=torch.device("cpu")) -> None:
+  def __init__(self, device: torch.device=torch.device("cpu"), feat_extract: bool=True) -> None:
     super().__init__()
     self.device = device
+    self.feat_extract = feat_extract
   
   def forward(self, x: torch.Tensor) -> torch.Tensor: 
-    return music2represent(x, self.device)
+    if self.feat_extract:
+      return music2represent(x, self.device)
+    else:
+      return x.to(self.device)
   
 
 class CRNNExtractor(nn.Module):
-  def __init__(self, device: torch.device=torch.device("cpu")) -> None:
+  def __init__(self, device: torch.device=torch.device("cpu"), feat_extract: bool=True) -> None:
     super().__init__()
     self.device = device
+    self.feat_extract = feat_extract
 
     in_channels = [1, 30, 60, 60]
     out_channels = [30, 60, 60, 60]
@@ -56,18 +61,23 @@ class CRNNExtractor(nn.Module):
     self.rnn = self.rnn.to(device)
     self.fc = self.fc.to(device)
 
-  def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-    x = music2melspectrogram(inputs, self.device).unsqueeze(dim=1)
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    if self.feat_extract:
+      x = music2melspectrogram(x, self.device).unsqueeze(dim=1)
+    else:
+      x = x.to(self.device).unsqueeze(dim=1)
+    
     x = self.cnn(x)
-    x, h = self.rnn(x, None)
+    x, _ = self.rnn(x, None)
     x = self.fc(x)
     return x
 
 
 class GRUExtractor(nn.Module):
-  def __init__(self, device: torch.device=torch.device("cpu")) -> None:
+  def __init__(self, device: torch.device=torch.device("cpu"), feat_extract: bool=True) -> None:
     super().__init__()
     self.device = device
+    self.feat_extract = feat_extract
 
     tempogram_dim = 10
     rms_dim = 1
@@ -130,8 +140,11 @@ class GRUExtractor(nn.Module):
     h = self.zcr_flt(h.transpose(0, 1))
     return self.zcr_fc(h)
   
-  def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-    x = music2feature(inputs, self.device)
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    if self.feat_extract:
+      x = music2feature(x, self.device)
+    else:
+      x = x.to(self.device)
     tempogram = self.tempogram_forward(x[:, 0:10, :]) # 0 ~ 9
     rms = self.rms_forward(x[:, 10:11, :])            # 10
     mfcc = self.mfcc_forward(x[:, 11:23, :])          # 11 ~ 22       
@@ -150,30 +163,20 @@ class HeadMLP(nn.Module):
     self.fc2 = nn.Linear(10, 1)
   
   def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = normalize(x)
-    x = F.leaky_relu(self.fc1(x))
-    x = self.fc2(x)
-    return x
-
-
-class HeadLR(nn.Module):
-  def __init__(self) -> None:
-    super().__init__()
-    self.linear = nn.Linear(60, 1)
-  
-  def forward(self, x) -> float:
-    return self.linear(x)
+    x_norm = normalize(x)
+    h = F.leaky_relu(self.fc1(x_norm))
+    return self.fc2(h)
 
 
 # ===== ===== ===== =====
 # Extractor + Head
 # ===== ===== ===== =====
 class Model(nn.Module):
-  def __init__(self, extractor: str=EXTRACTOR_TYPE, head: str=HEAD_TYPE, device: torch.device=torch.device("cpu")) -> None:
+  def __init__(self, extractor: str=EXTRACTOR_TYPE, head: str=HEAD_TYPE, device: torch.device=torch.device("cpu"), feat_extract: bool=True) -> None:
     super().__init__()
-    self.extractor = self.__select_extractor(extractor, device)
+    self.extractor = self.__select_extractor(extractor, device, feat_extract)
     self.extractor = self.extractor.to(device)
-    self.head = self.__select_head(head)
+    self.head = HeadMLP()
     self.head = self.head.to(device)
     self.device = device
   
@@ -182,20 +185,12 @@ class Model(nn.Module):
     out = self.head(z)
     return out
 
-  def __select_extractor(self, extractor_type: str, device: torch.device=torch.device("cpu")) -> ReprExtractor | CRNNExtractor | GRUExtractor:
+  def __select_extractor(self, extractor_type: str, device: torch.device=torch.device("cpu"), feat_extract: bool=True) -> ReprExtractor | CRNNExtractor | GRUExtractor:
     if extractor_type == EXTRACTOR_REPR:
-      return ReprExtractor(device)
+      return ReprExtractor(device, feat_extract)
     if extractor_type == EXTRACTOR_SPEC:
-      return CRNNExtractor(device)
+      return CRNNExtractor(device, feat_extract)
     if extractor_type == EXTRACTOR_FEAT:
-      return GRUExtractor(device)
+      return GRUExtractor(device, feat_extract)
     if True:
       raise InvalidArgumentException(extractor_type)
-  
-  def __select_head(self, head_type: str):
-    if head_type == HEAD_MLP:
-      return HeadMLP()
-    if head_type == HEAD_LR:
-      return HeadLR()
-    if True:
-      raise InvalidArgumentException(head_type)

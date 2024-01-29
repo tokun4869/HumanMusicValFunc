@@ -1,4 +1,5 @@
 import torch
+from module.const import EXTRACTOR_FEAT, EXTRACTOR_REPR, EXTRACTOR_SPEC
 import module.features as f
 
 # kernel, fft_win_length, fft_hop_length = f.kernel_matrix()
@@ -26,3 +27,11 @@ def music2represent(y: torch.Tensor, device: torch.device=torch.device("cpu")) -
 
 def music2melspectrogram(y: torch.Tensor, device: torch.device=torch.device("cpu")) -> torch.Tensor:
   return f.calc_melspectrogram(y, device)
+
+def music2input(y: torch.Tensor, extractor: str, device: torch.device=torch.device("cpu")) -> torch.Tensor:
+  if extractor == EXTRACTOR_REPR:
+    return f.music2represent(y, device)
+  if extractor == EXTRACTOR_SPEC:
+    return f.music2melspectrogram(y, device)
+  if extractor == EXTRACTOR_FEAT:
+    return f.music2feature(y, device)

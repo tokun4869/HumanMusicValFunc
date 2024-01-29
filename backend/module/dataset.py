@@ -1,10 +1,12 @@
 import torch
 import numpy as np
+import module.features as f
 from module.const import *
 
 class TrainDataset(torch.utils.data.Dataset):
-  def __init__(self, input_list: list, target_list: list[int]):
-    self.input = input_list
+  def __init__(self, input_list: list, target_list: list[int], extractor, device: torch.device=torch.device("cpu")):
+    input_tensor = torch.Tensor(np.array(input_list)).to(device)
+    self.input = f.music2input(input_tensor, extractor=extractor, device=device)
     self.target = target_list
   
   def __len__(self):

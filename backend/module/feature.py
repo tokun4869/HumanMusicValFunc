@@ -163,9 +163,3 @@ def music2melspectrogram(y: np.ndarray[np.float32]) -> np.ndarray[np.ndarray[np.
 
 def musics2input(music_list: list[np.ndarray[np.float32]]) -> list[np.ndarray[np.float32]]:
   return [data_augmentation(y) for y in music_list]
-  if MODEL_TYPE == MODEL_SPEC:
-    return [music2melspectrogram(data_augmentation(y)) for y in music_list]
-  if MODEL_TYPE == MODEL_FEAT:
-    return [music2feature(data_augmentation(y)) for y in music_list]
-  if True:
-    return [music2represent(data_augmentation(y)) for y in music_list]
